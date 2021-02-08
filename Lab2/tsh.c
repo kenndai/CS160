@@ -169,11 +169,9 @@ void eval(char* cmdline) {
 	pid_t pid;
 	sigset_t mask;
 
-	sigemptyset(&mask);
-	sigaddset(&mask, SIGCHLD);
-	sigprocmask(SIG_BLOCK, &mask, NULL);
-
 	bg = parseline(cmdline, argv); //calls parseline, find out if job is bg or fg
+
+	if (argv[0] == NULL) return;
 
 	if (!builtin_cmd(argv)) { //runs command immediately
 		/* block sigchld */
@@ -183,8 +181,8 @@ void eval(char* cmdline) {
 
 		/* child */
 		if ((pid = fork()) == 0) { //run the job
-			setpgid(0, 0);
 			sigprocmask(SIG_UNBLOCK, &mask, NULL); //unblock sigchld
+			setpgid(0, 0);
 			if (execve(argv[0], argv, environ) < 0) {
 				printf("%s: Command not found.\n", argv[0]);
 				exit(0);
@@ -192,11 +190,16 @@ void eval(char* cmdline) {
 		}
 
 		/* parent */
-		addjob(jobs, pid, bg, cmdline); //adds job to the job list
-		sigprocmask(SIG_UNBLOCK, &mask, NULL); //unblock sigchld
-		if (!bg) waitfg(pid); //if its a fg job wait for it to complete
-	}
+		else {
+			printf("bacground or foreground: %d\n", bg);
+			bg == 1 ? addjob(jobs, pid, BG, cmdline) : addjob(jobs, pid, FG, cmdline); //add job
 
+			sigprocmask(SIG_UNBLOCK, &mask, NULL); //then unblock sigchld
+
+			if (!bg) waitfg(pid); //if its a fg job wait for it to complete
+			else printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
+		}
+	}
     return;
 }
 
@@ -318,15 +321,17 @@ void do_bgfg(char **argv) {
  * waitfg - Block until process pid is no longer the foreground process
  */
 void waitfg(pid_t pid) {
-	struct job_t* job = getjobpid(jobs, pid); //gets the job of pid
-	while (job->state == FG) //wait until job's state is not set to FG
-		sleep(1);
-
+	struct job_t* job = getjobpid(jobs, pid); //gets the foreground job
+	printf("waiting on foreground job with pid: %d\n", pid);
+	while (job->state == FG)  //while its state is still FG
+		sleep(1);	
+	
 	/*
 	if ((fgPid = fgpid(jobs)) > 0) //assigns fgPid the pid of the fg process if it exists
 		while (pid == fgPid) //wait until pid is not the same as fgPid
 			sleep(1);
 	*/
+	printf("finished foreground job\n");
     return;
 }
 
@@ -346,9 +351,11 @@ void waitfg(pid_t pid) {
 void sigchld_handler(int sig) { 
 	int child_status;
 	pid_t pid;
-	while ((pid = waitpid(-1, &child_status, WNOHANG | WUNTRACED) > 0)) { //while there're still pids to track
-		if (WIFEXITED(child_status)) //normal termination
+	while ((pid = waitpid(-1, &child_status, WNOHANG | WUNTRACED)) > 0) { //while there're still pids to track
+		if (WIFEXITED(child_status)) {//normal termination
+			printf("Job [%d] (%d) terminated normally %d\n", pid2jid(pid), pid, WEXITSTATUS(child_status));
 			deletejob(jobs, pid);	
+		}
 		else if (WIFSIGNALED(child_status)) { //signal termination
 			printf("Job [%d] (%d) terminated by signal %d\n", pid2jid(pid), pid, WTERMSIG(child_status));
 			deletejob(jobs, pid);
@@ -368,11 +375,9 @@ void sigchld_handler(int sig) {
  *    to the foreground job.  
  */
 void sigint_handler(int sig) {
-	pid_t fgPid;
-	if ((fgPid = fgpid(jobs)) > 0) //if fg job and its pid exists
-		if (kill(-fgPid, SIGINT) < 0) //sends SIGINT to fg process group
-			unix_error("kill SIGINT error");
-	printf("\n");
+	pid_t fgPid = fgpid(jobs);
+	if (fgPid > 0) //if fg job and its pid exists
+		kill(-fgPid, SIGINT); //sends SIGINT to fg process group
     return;
 }
 
