@@ -190,15 +190,14 @@ void eval(char* cmdline) {
 		}
 
 		/* parent */
-		else {
-			printf("bacground or foreground: %d\n", bg);
+//		else {
 			bg == 1 ? addjob(jobs, pid, BG, cmdline) : addjob(jobs, pid, FG, cmdline); //add job
 
 			sigprocmask(SIG_UNBLOCK, &mask, NULL); //then unblock sigchld
 
 			if (!bg) waitfg(pid); //if its a fg job wait for it to complete
 			else printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
-		}
+//		}
 	}
     return;
 }
@@ -322,7 +321,7 @@ void do_bgfg(char **argv) {
  */
 void waitfg(pid_t pid) {
 	struct job_t* job = getjobpid(jobs, pid); //gets the foreground job
-	printf("waiting on foreground job with pid: %d\n", pid);
+	//printf("waiting on foreground job with pid: %d\n", pid);
 	while (job->state == FG)  //while its state is still FG
 		sleep(1);	
 	
@@ -331,7 +330,7 @@ void waitfg(pid_t pid) {
 		while (pid == fgPid) //wait until pid is not the same as fgPid
 			sleep(1);
 	*/
-	printf("finished foreground job\n");
+	//printf("finished foreground job\n");
     return;
 }
 
@@ -376,8 +375,10 @@ void sigchld_handler(int sig) {
  */
 void sigint_handler(int sig) {
 	pid_t fgPid = fgpid(jobs);
-	if (fgPid > 0) //if fg job and its pid exists
+	if (fgPid > 0) { //if fg job and its pid exists
 		kill(-fgPid, SIGINT); //sends SIGINT to fg process group
+//		printf("\n");
+	}
     return;
 }
 
@@ -528,23 +529,23 @@ void listjobs(struct job_t *jobs) {
     
     for (i = 0; i < MAXJOBS; i++) {
 	if (jobs[i].pid != 0) {
-	    printf("[%d] (%d) ", jobs[i].jid, jobs[i].pid);
+	   	printf("[%d] (%d) ", jobs[i].jid, jobs[i].pid);
 	    switch (jobs[i].state) {
-		case BG: 
-		    printf("Running ");
-		    break;
-		case FG: 
-		    printf("Foreground ");
-		    break;
-		case ST: 
-		    printf("Stopped ");
-		    break;
-	    default:
-		    printf("listjobs: Internal error: job[%d].state=%d ", 
-			   i, jobs[i].state);
-	    }
-	    printf("%s", jobs[i].cmdline);
-	}
+			case BG: 
+		    	printf("Running ");
+		   		break;
+			case FG: 
+			    printf("Foreground ");
+			    break;
+			case ST: 
+		    	printf("Stopped ");
+		    	break;
+	    	default:
+		    	printf("listjobs: Internal error: job[%d].state=%d ", 
+			   	i, jobs[i].state);
+	    	}
+	    	printf("%s", jobs[i].cmdline);
+		}
     }
 }
 /******************************
@@ -606,6 +607,4 @@ void sigquit_handler(int sig) {
     printf("Terminating after receipt of SIGQUIT signal\n");
     exit(1);
 }
-
-
 
