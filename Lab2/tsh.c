@@ -51,7 +51,6 @@ struct job_t {              /* The job struct */
 struct job_t jobs[MAXJOBS]; /* The job list */
 /* End global variables */
 
-
 /* Function prototypes */
 
 /* Here are the functions that you will implement */
@@ -190,14 +189,12 @@ void eval(char* cmdline) {
 		}
 
 		/* parent */
-//		else {
-			bg == 1 ? addjob(jobs, pid, BG, cmdline) : addjob(jobs, pid, FG, cmdline); //add job
+		bg == 1 ? addjob(jobs, pid, BG, cmdline) : addjob(jobs, pid, FG, cmdline); //add job
 
-			sigprocmask(SIG_UNBLOCK, &mask, NULL); //then unblock sigchld
+		sigprocmask(SIG_UNBLOCK, &mask, NULL); //then unblock sigchld
 
-			if (!bg) waitfg(pid); //if its a fg job wait for it to complete
-			else printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
-//		}
+		if (!bg) waitfg(pid); //if its a fg job wait for it to complete
+		else printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
 	}
     return;
 }
@@ -352,7 +349,7 @@ void sigchld_handler(int sig) {
 	pid_t pid;
 	while ((pid = waitpid(-1, &child_status, WNOHANG | WUNTRACED)) > 0) { //while there're still pids to track
 		if (WIFEXITED(child_status)) {//normal termination
-			printf("Job [%d] (%d) terminated normally %d\n", pid2jid(pid), pid, WEXITSTATUS(child_status));
+			// printf("Job [%d] (%d) terminated normally %d\n", pid2jid(pid), pid, WEXITSTATUS(child_status));
 			deletejob(jobs, pid);	
 		}
 		else if (WIFSIGNALED(child_status)) { //signal termination
@@ -363,8 +360,8 @@ void sigchld_handler(int sig) {
 			printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(pid), pid, WSTOPSIG(child_status));
 		}
 	}
-	if (errno != ECHILD)
-		unix_error("waitpid error");
+//	if (errno != ECHILD)
+//		unix_error("waitpid error");
     return;
 }
 
@@ -393,8 +390,7 @@ void sigtstp_handler(int sig) {
 		struct job_t* fgJob;	
 		fgJob = getjobpid(jobs, fgPid);
 		fgJob->state = ST; //sets fg state to suspended
-		if (kill(-fgPid, SIGTSTP) < 0) //sends SIGTSTP to fg process group
-			unix_error("kill SIGTSTP error");
+		kill(-fgPid, SIGTSTP); //sends SIGTSTP to fg process group
 	}	
 
     return;
