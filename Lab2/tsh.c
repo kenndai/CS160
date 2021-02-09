@@ -183,7 +183,7 @@ void eval(char* cmdline) {
 			sigprocmask(SIG_UNBLOCK, &mask, NULL); //unblock sigchld
 			setpgid(0, 0);
 			if (execve(argv[0], argv, environ) < 0) {
-				printf("%s: Command not found.\n", argv[0]);
+				printf("%s: Command not found\n", argv[0]);
 				exit(0);
 			}
 		}
