@@ -16,8 +16,6 @@ void main() {
 
 	step = 1.0 / (double)num_steps; 
 
-	int foo = num_steps / 6;
-
 	#pragma omp parallel firstprivate(i, x, sum, num_steps)
 	{
 		/* private variables */
