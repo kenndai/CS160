@@ -9,12 +9,15 @@ double step;
 void main() {
 	/* shared variables */
 	int i; 
-	double x, pi, sum;
+	double x, pi, sum, start, end;
 	double psums[64] = {0};
+
+	start = omp_get_wtime(); //start timer
 
 	step = 1.0 / (double)num_steps; 
 
-	//double omp_get_wtime(); //time in seconds
+	int foo = num_steps / 6;
+
 	#pragma omp parallel firstprivate(i, x, sum, num_steps)
 	{
 		/* private variables */
@@ -35,5 +38,7 @@ void main() {
 	for (i = 0; i < 64; ++i)
 		pi += step * psums[i];
 
+	end = omp_get_wtime(); //stop timer
+	printf("time: %f\n", end - start);
 	printf("calculation of pi: %f\n", pi);
 }
