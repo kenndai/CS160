@@ -10,7 +10,7 @@ void main() {
 	/* shared variables */
 	int i; 
 	double x, pi, sum;
-	double results[4];
+	double psums[64] = {0};
 
 	step = 1.0 / (double)num_steps; 
 
@@ -29,9 +29,11 @@ void main() {
 		}
 
 		#pragma omp critical
-			results[ID] = sum;
+			psums[ID] = sum;
 	}
 
-	pi = step * (results[0] + results[1] + results[2] + results[3]);
+	for (i = 0; i < 64; ++i)
+		pi += step * psums[i];
+
 	printf("calculation of pi: %f\n", pi);
 }
