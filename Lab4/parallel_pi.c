@@ -37,6 +37,7 @@ void main() {
 		pi += step * psums[i];
 
 	end = omp_get_wtime(); //stop timer
-	printf("time: %f\n", end - start);
+
+	printf("elpased time: %f\n", end - start);
 	printf("calculation of pi: %f\n", pi);
 }
